@@ -406,6 +406,8 @@ pub(super) struct SchemaObject {
     /// Whether a property's schema is marked `x-stainless-skip: true`. A
     /// list of the targets to skip it for is ignored.
     pub(super) skip: bool,
+    /// The `x-stainless-terraform-configurability` value, or empty for none.
+    pub(super) tf_configurability: Str,
 }
 
 /// A value of `type` in a Schema Object.
@@ -1619,6 +1621,7 @@ keys! {
         ModelName = "x-fern-type-name",
         FieldName = "x-fern-property-name",
         Skip = "x-stainless-skip",
+        TfConfigurability = "x-stainless-terraform-configurability",
     }
 }
 
@@ -1675,6 +1678,9 @@ impl ReadObject for SchemaObject {
                 SchemaKey::ModelName => schema.model_name = map.next_value_seed(seed::<ReadStr>(doc))?,
                 SchemaKey::FieldName => schema.field_name = map.next_value_seed(seed::<ReadStr>(doc))?,
                 SchemaKey::Skip => schema.skip = map.next_value::<StainlessSkip>()?.0,
+                SchemaKey::TfConfigurability => {
+                    schema.tf_configurability = map.next_value_seed(seed::<ReadStr>(doc))?;
+                }
                 SchemaKey::Other => skip(&mut map)?,
             }
         }

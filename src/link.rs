@@ -661,6 +661,7 @@ impl<'d> Builder<'d> {
                     read_only: false,
                     sensitive: false,
                     default: None,
+                    tf_configurability: Str::default(),
                 });
                 params = Some(self.params_object(fields));
                 request = params;
@@ -788,6 +789,7 @@ impl<'d> Builder<'d> {
                     read_only: false,
                     sensitive: false,
                     default: None,
+                    tf_configurability: Str::default(),
                 },
             };
             fields.push(field);
@@ -946,6 +948,7 @@ impl<'d> Builder<'d> {
             read_only: false,
             sensitive: self.schema_flags(param.schema).sensitive,
             default: self.schema_default(param.schema),
+            tf_configurability: Str::default(),
         }
     }
 
@@ -1618,6 +1621,7 @@ impl<'d> Builder<'d> {
                 read_only: flags.read_only,
                 sensitive: flags.sensitive,
                 default: self.schema_default(property),
+                tf_configurability: self.strings.push(doc.str(flags.tf_configurability)),
             });
         }
         for &name in doc.list(schema.required) {
@@ -2023,7 +2027,10 @@ impl<'d> Builder<'d> {
             let has_ref = !object.reference.is_empty();
             flags.read_only |= object.read_only && !(has_ref && self.v30);
             flags.sensitive |= object.sensitive;
-            if !has_ref || (flags.read_only && flags.sensitive) {
+            if flags.tf_configurability.is_empty() && !object.tf_configurability.is_empty() {
+                flags.tf_configurability = object.tf_configurability;
+            }
+            if !has_ref || (flags.read_only && flags.sensitive && !flags.tf_configurability.is_empty()) {
                 break;
             }
             let Ok((target, _)) = self.resolve(doc.str(object.reference)) else {
@@ -2143,6 +2150,8 @@ impl<'d> Builder<'d> {
 struct SchemaFlags {
     read_only: bool,
     sensitive: bool,
+    /// The `x-stainless-terraform-configurability` value, or empty for none.
+    tf_configurability: Str,
 }
 
 /// Returns the schema of `key` in `entries`, such as `properties`.

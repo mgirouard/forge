@@ -442,6 +442,19 @@ impl<'f> Field<'f> {
     pub fn default(self) -> Option<&'f Json> {
         Some(&self.forge.defaults[self.data.default?.index()])
     }
+
+    /// Returns the `x-stainless-terraform-configurability` value declared on
+    /// the property's schema, or on a schema along its chain of `$ref`s, or
+    /// `None` if none is set.
+    ///
+    /// The value is kept as written and not checked against the known
+    /// Terraform configurability values. It is the migration synonym the
+    /// Terraform target reads for attribute configurability; see RFC 002 in
+    /// that target's docs.
+    pub fn terraform_configurability(self) -> Option<&'f str> {
+        let value = self.forge.strings.get(self.data.tf_configurability);
+        (!value.is_empty()).then_some(value)
+    }
 }
 
 impl<'f> Union<'f> {
@@ -597,6 +610,8 @@ pub(crate) struct FieldData {
     pub(crate) sensitive: bool,
     /// The default, in `Forge::defaults`.
     pub(crate) default: Option<Id<Json>>,
+    /// The `x-stainless-terraform-configurability` value, or empty for none.
+    pub(crate) tf_configurability: Str,
 }
 
 pub(crate) struct UnionData {
